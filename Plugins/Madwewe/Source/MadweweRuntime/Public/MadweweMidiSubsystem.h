@@ -40,6 +40,9 @@ struct MADWEWERUNTIME_API FMadweweMidiEvent
 
     UPROPERTY(BlueprintReadOnly, Category = "Madwewe|MIDI")
     int32 RawType = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Madwewe|MIDI")
+    bool bSynthetic = false;
 };
 
 USTRUCT(BlueprintType)
@@ -58,6 +61,7 @@ struct MADWEWERUNTIME_API FMadweweMidiDevice
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMadweweMidiEventDelegate, const FMadweweMidiEvent&, Event);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMadweweMidiConnectionDelegate, bool, bConnected);
 
 /** Per-game-instance MIDI input and bounded diagnostics. Device selection is explicit. */
 UCLASS(BlueprintType)
@@ -68,6 +72,9 @@ class MADWEWERUNTIME_API UMadweweMidiSubsystem : public UGameInstanceSubsystem
 public:
     UPROPERTY(BlueprintAssignable, Category = "Madwewe|MIDI")
     FMadweweMidiEventDelegate OnMidiEvent;
+
+    UPROPERTY(BlueprintAssignable, Category = "Madwewe|MIDI")
+    FMadweweMidiConnectionDelegate OnConnectionChanged;
 
     UFUNCTION(BlueprintCallable, Category = "Madwewe|MIDI")
     TArray<FMadweweMidiDevice> RefreshDevices();
@@ -98,6 +105,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Madwewe|MIDI")
     void ClearRecentEvents() { RecentEvents.Reset(); }
 
+    /** Emit a deterministic Note On/Off or CC event without a MIDI device. */
+    UFUNCTION(BlueprintCallable, Category = "Madwewe|MIDI|Testing")
+    bool EmitTestEvent(EMadweweMidiKind Kind, int32 Channel, int32 Number, int32 Value);
+
     virtual void Deinitialize() override;
 
     /** Shared normalization used by hardware events and deterministic tests. */
@@ -106,6 +117,8 @@ public:
 private:
     void HandleRawEvent(UMIDIDeviceInputController* Source, int32 Timestamp, int32 RawType,
         int32 Channel, int32 Data1, int32 Data2);
+    void RecordEvent(const FString& DeviceName, int32 Timestamp, int32 RawType,
+        int32 Channel, int32 Data1, int32 Data2, bool bSynthetic);
 
     UPROPERTY(Transient)
     TObjectPtr<UMIDIDeviceInputController> Controller;

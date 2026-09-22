@@ -20,7 +20,7 @@ Madwewe is defined by its own user journeys: simple mappings, inspectable source
 - The installed MIDIDevice plugin declares a Runtime module, Beta status, and Win64/Mac support. We will promise Windows support first.
 - AudioCapture and AudioMixer spectrum APIs are present locally. Capture-device behavior and packaging still need a practical test.
 - Maschine MK3 availability is user-reported. It has not yet been connected or tested in this project.
-- Git, Git LFS, and an authenticated GitHub CLI for `pixelsncodes` were detected. Remote publication has not been verified yet.
+- Git, Git LFS, and an authenticated GitHub CLI for `pixelsncodes` were detected. The public `pixelsncodes/madwewe` repository and push to `main` were subsequently verified.
 
 ## 3. Scope and success criteria
 

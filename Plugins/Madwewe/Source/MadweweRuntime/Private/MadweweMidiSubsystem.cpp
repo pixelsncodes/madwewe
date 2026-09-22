@@ -45,11 +45,13 @@ bool UMadweweMidiSubsystem::Connect(int32 DeviceId)
     Controller = NewController;
     ConnectedDeviceName = Device->Name;
     Controller->OnMIDIRawEvent.AddUObject(this, &UMadweweMidiSubsystem::HandleRawEvent);
+    OnConnectionChanged.Broadcast(true);
     return true;
 }
 
 void UMadweweMidiSubsystem::Disconnect()
 {
+    const bool bWasConnected = Controller != nullptr;
     if (Controller)
     {
         Controller->OnMIDIRawEvent.RemoveAll(this);
@@ -57,6 +59,10 @@ void UMadweweMidiSubsystem::Disconnect()
         Controller = nullptr;
     }
     ConnectedDeviceName.Reset();
+    if (bWasConnected)
+    {
+        OnConnectionChanged.Broadcast(false);
+    }
 }
 
 bool UMadweweMidiSubsystem::IsConnected() const
@@ -85,18 +91,42 @@ EMadweweMidiKind UMadweweMidiSubsystem::NormalizeType(int32 RawType, int32 Veloc
 void UMadweweMidiSubsystem::HandleRawEvent(UMIDIDeviceInputController* Source, int32 Timestamp,
     int32 RawType, int32 Channel, int32 Data1, int32 Data2)
 {
-    if (Source != Controller || (ChannelFilter != 0 && ChannelFilter != Channel))
+    if (Source != Controller)
+    {
+        return;
+    }
+    RecordEvent(ConnectedDeviceName, Timestamp, RawType, Channel, Data1, Data2, false);
+}
+
+bool UMadweweMidiSubsystem::EmitTestEvent(EMadweweMidiKind Kind, int32 Channel, int32 Number, int32 Value)
+{
+    if (Channel < 1 || Channel > 16 || Number < 0 || Number > 127 || Value < 0 || Value > 127
+        || Kind == EMadweweMidiKind::Other)
+    {
+        return false;
+    }
+    const int32 RawType = Kind == EMadweweMidiKind::NoteOn ? 9
+        : Kind == EMadweweMidiKind::NoteOff ? 8 : 11;
+    RecordEvent(TEXT("Test input"), 0, RawType, Channel, Number, Value, true);
+    return true;
+}
+
+void UMadweweMidiSubsystem::RecordEvent(const FString& DeviceName, int32 Timestamp,
+    int32 RawType, int32 Channel, int32 Data1, int32 Data2, bool bSynthetic)
+{
+    if (ChannelFilter != 0 && ChannelFilter != Channel)
     {
         return;
     }
     FMadweweMidiEvent Event;
-    Event.DeviceName = ConnectedDeviceName;
+    Event.DeviceName = DeviceName;
     Event.Timestamp = Timestamp;
     Event.RawType = RawType;
     Event.Channel = Channel;
     Event.Data1 = Data1;
     Event.Data2 = Data2;
     Event.Kind = NormalizeType(RawType, Data2);
+    Event.bSynthetic = bSynthetic;
     if (RecentEvents.Num() == MaxRecentEvents)
     {
         RecentEvents.RemoveAt(0, 1, EAllowShrinking::No);
