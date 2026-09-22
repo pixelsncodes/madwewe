@@ -42,6 +42,8 @@ public:
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
                 [ SNew(STextBlock).Text(this, &SMadweweMidiMonitor::GetStatus).AutoWrapText(true) ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
+                [ SNew(STextBlock).Text(this, &SMadweweMidiMonitor::GetMappingSummary).AutoWrapText(true) ]
+                + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
                 [
                     SNew(SHorizontalBox)
                     + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
@@ -52,6 +54,10 @@ public:
                     [ SNew(SButton).Text(LOCTEXT("UseLastPad", "Use last pad"))
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
                         .OnClicked(this, &SMadweweMidiMonitor::UseLastPad) ]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
+                    [ SNew(SButton).Text(LOCTEXT("UseLastCC", "Use last CC"))
+                        .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
+                        .OnClicked(this, &SMadweweMidiMonitor::UseLastCC) ]
                     + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
                     [ SNew(SButton).Text(LOCTEXT("Refresh", "Refresh ports"))
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
@@ -94,9 +100,13 @@ public:
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
                         .OnClicked(this, &SMadweweMidiMonitor::TestPadUp) ]
                     + SHorizontalBox::Slot().AutoWidth()
-                    [ SNew(SButton).Text(LOCTEXT("TestKnob", "Test CC 21"))
+                    [ SNew(SButton).Text(this, &SMadweweMidiMonitor::GetTestCCLowLabel)
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
-                        .OnClicked(this, &SMadweweMidiMonitor::TestKnob) ]
+                        .OnClicked(this, &SMadweweMidiMonitor::TestCCLow) ]
+                    + SHorizontalBox::Slot().AutoWidth()
+                    [ SNew(SButton).Text(this, &SMadweweMidiMonitor::GetTestCCHighLabel)
+                        .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
+                        .OnClicked(this, &SMadweweMidiMonitor::TestCCHigh) ]
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
                 [ SNew(STextBlock).Text(LOCTEXT("Columns", "Time  |  Port  |  Channel  |  Event  |  Raw  |  Number  |  Value")) ]
@@ -250,11 +260,48 @@ private:
         return FReply::Handled();
     }
 
-    FReply TestKnob()
+    FReply UseLastCC()
+    {
+        UMadweweMidiSubsystem* Service = GetService();
+        if (!Service || !TestRig.IsValid())
+        {
+            Message = TEXT("Spawn the test rig first.");
+            return FReply::Handled();
+        }
+        const TArray<FMadweweMidiEvent> Events = Service->GetRecentEvents();
+        for (int32 Index = Events.Num() - 1; Index >= 0; --Index)
+        {
+            const FMadweweMidiEvent& Event = Events[Index];
+            if (!Event.bSynthetic && Event.Kind == EMadweweMidiKind::ControlChange)
+            {
+                if (TestRig->UseHeightCC(Event.Channel, Event.Data1))
+                {
+                    Message = FString::Printf(TEXT("Cube height listens to CC %d on channel %d."), Event.Data1, Event.Channel);
+                }
+                return FReply::Handled();
+            }
+        }
+        Message = TEXT("No real CC found yet. Turn a knob, then try again.");
+        return FReply::Handled();
+    }
+
+    FReply TestCCLow()
+    {
+        return EmitTestCC(0);
+    }
+
+    FReply TestCCHigh()
+    {
+        return EmitTestCC(96);
+    }
+
+    FReply EmitTestCC(int32 Value)
     {
         if (UMadweweMidiSubsystem* Service = GetService())
         {
-            Service->EmitTestEvent(EMadweweMidiKind::ControlChange, 1, 21, 96);
+            Service->EmitTestEvent(EMadweweMidiKind::ControlChange,
+                TestRig.IsValid() ? TestRig->GetHeightChannel() : 1,
+                TestRig.IsValid() ? TestRig->GetHeightCC() : 21, Value);
         }
         return FReply::Handled();
     }
@@ -287,6 +334,31 @@ private:
     {
         return FText::Format(LOCTEXT("PadUpFormat", "Pad {0} up"),
             FText::AsNumber(TestRig.IsValid() ? TestRig->GetPadNote() : 36));
+    }
+    FText GetTestCCLowLabel() const
+    {
+        return FText::Format(LOCTEXT("CCLowFormat", "CC {0} low"),
+            FText::AsNumber(TestRig.IsValid() ? TestRig->GetHeightCC() : 21));
+    }
+    FText GetTestCCHighLabel() const
+    {
+        return FText::Format(LOCTEXT("CCHighFormat", "CC {0} high"),
+            FText::AsNumber(TestRig.IsValid() ? TestRig->GetHeightCC() : 21));
+    }
+
+    FText GetMappingSummary() const
+    {
+        if (!GetService())
+        {
+            return FText::GetEmpty();
+        }
+        if (!TestRig.IsValid())
+        {
+            return LOCTEXT("MappingBeforeRig", "Spawn test rig to see MIDI mappings. Test buttons create events; they do not toggle.");
+        }
+        return FText::FromString(FString::Printf(
+            TEXT("Light: channel %d, note %d (down brightens; up resets). Cube height: channel %d, CC %d (low/high set absolute positions). Pad pressure is monitored but not mapped."),
+            TestRig->GetPadChannel(), TestRig->GetPadNote(), TestRig->GetHeightChannel(), TestRig->GetHeightCC()));
     }
 
     FText GetStatus() const

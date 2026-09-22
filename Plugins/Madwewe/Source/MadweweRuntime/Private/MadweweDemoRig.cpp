@@ -30,8 +30,9 @@ AMadweweDemoRig::AMadweweDemoRig()
 
     PreviewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PreviewCamera"));
     PreviewCamera->SetupAttachment(SceneRoot);
-    PreviewCamera->SetRelativeLocation(FVector(-350.0f, 0.0f, 120.0f));
-    PreviewCamera->SetRelativeRotation(FRotator(-18.0f, 0.0f, 0.0f));
+    // Leave room above the cube for its full CC-controlled travel.
+    PreviewCamera->SetRelativeLocation(FVector(-600.0f, 0.0f, 180.0f));
+    PreviewCamera->SetRelativeRotation(FRotator(-10.0f, 0.0f, 0.0f));
 
     MidiBinding = CreateDefaultSubobject<UMadweweMidiDemoBinding>(TEXT("MidiBinding"));
 }
@@ -39,6 +40,11 @@ AMadweweDemoRig::AMadweweDemoRig()
 bool AMadweweDemoRig::UsePad(int32 InChannel, int32 InNote)
 {
     return MidiBinding && MidiBinding->UsePad(InChannel, InNote);
+}
+
+bool AMadweweDemoRig::UseHeightCC(int32 InChannel, int32 InCC)
+{
+    return MidiBinding && MidiBinding->UseHeightCC(InChannel, InCC);
 }
 
 int32 AMadweweDemoRig::GetPadNote() const
@@ -49,4 +55,14 @@ int32 AMadweweDemoRig::GetPadNote() const
 int32 AMadweweDemoRig::GetPadChannel() const
 {
     return MidiBinding ? MidiBinding->Channel : 1;
+}
+
+int32 AMadweweDemoRig::GetHeightCC() const
+{
+    return MidiBinding ? MidiBinding->HeightCC : 21;
+}
+
+int32 AMadweweDemoRig::GetHeightChannel() const
+{
+    return MidiBinding ? MidiBinding->HeightChannel : 1;
 }

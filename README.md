@@ -4,7 +4,7 @@
 
 Madwewe is an open-source Unreal Engine plugin project for mapping audio and MIDI to lights, materials, motion, particles, and gameplay events.
 
-**Status: early implementation. MIDI input, a dockable monitor, synthetic test events, and a small light/motion demo rig now compile. One MK3 pad has been observed in the monitor; the visual response, audio, general mappings, and a playable packaged demo are still pending.**
+**Status: early implementation. MIDI input, a dockable monitor, synthetic test events, and a small light/motion demo rig now compile. An MK3 pad and the synthetic cube-motion control have been visually tested; a physical knob, audio, general mappings, and a playable packaged demo are still pending.**
 
 Initial development target: Windows, Unreal Engine 5.8.2, with a Maschine MK3 as the first hardware test controller. Other controllers should work through standard MIDI mappings; they will be listed as tested only after verification.
 
@@ -19,8 +19,8 @@ Refresh intentionally disconnects this subsystem's current port because Unreal r
 1. Open `MadweweDemo.uproject` in Unreal and choose **Window → Tools → Madwewe MIDI Monitor**.
 2. Start **Play in Editor**. The panel's controls are active only during Play.
 3. Click **Spawn test rig**. It places a cube and light in front of a dedicated preview camera and switches the Play view to it. Clicking again reframes the rig.
-4. Click **Pad 36 down** to raise the light, then **Pad 36 up** to restore it. Click **Test CC 21** to raise the cube. These events are labeled `Test input` and do not require hardware.
-5. For a real controller, put it in MIDI mode, click **Refresh ports**, choose its input port, then **Connect**. The status line names the active port; a different dropdown selection is not active until **Connect** is clicked. Press a pad, then **Use last pad** to assign its note/channel to the test rig. Press it again to check the light response. The synthetic pad buttons update to the assigned note. Turn a knob and inspect its CC number; the rig still uses CC 21 by default.
+4. Click **Pad 36 down** to brighten the light, then **Pad 36 up** to restore it. Each button sets a state; pressing the same button again will not toggle it. Click **CC 21 high** to raise the cube and **CC 21 low** to lower it. These events are labeled `Test input` and do not require hardware.
+5. For a real controller, put it in MIDI mode, click **Refresh ports**, choose its input port, then **Connect**. The status line names the active port; a different dropdown selection is not active until **Connect** is clicked. Press a pad, then **Use last pad** to assign its note/channel to the light. Turn a knob that sends a `CC` event, then click **Use last CC** to assign its number/channel to cube height. The on-screen mapping summary and synthetic button labels update. Pad pressure is visible in the monitor but does not control the rig yet.
 
 Stop Play to restore the test rig's starting state. The rig can also be placed in your own level as a `MadweweDemoRig` actor. The packaged host currently has no runtime device-selection UI or preplaced demo level, so packaging success is not yet an end-to-end playable-demo claim.
 

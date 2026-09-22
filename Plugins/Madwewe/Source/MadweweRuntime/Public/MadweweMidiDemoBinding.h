@@ -26,6 +26,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Madwewe|Demo|MIDI", meta = (ClampMin = "0", ClampMax = "127"))
     int32 HeightCC = 21;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Madwewe|Demo|MIDI", meta = (ClampMin = "1", ClampMax = "16"))
+    int32 HeightChannel = 1;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Madwewe|Demo|Response", meta = (ClampMin = "0"))
     float LightBoost = 2000.0f;
 
@@ -37,6 +40,7 @@ public:
 
     static float MidiUnit(int32 Value);
     bool UsePad(int32 InChannel, int32 InNote);
+    bool UseHeightCC(int32 InChannel, int32 InCC);
 
 private:
     UFUNCTION()

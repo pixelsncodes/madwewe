@@ -63,13 +63,21 @@ bool UMadweweMidiDemoBinding::UsePad(int32 InChannel, int32 InNote)
     return true;
 }
 
+bool UMadweweMidiDemoBinding::UseHeightCC(int32 InChannel, int32 InCC)
+{
+    if (InChannel < 1 || InChannel > 16 || InCC < 0 || InCC > 127)
+    {
+        return false;
+    }
+    RestoreTargets();
+    HeightChannel = InChannel;
+    HeightCC = InCC;
+    return true;
+}
+
 void UMadweweMidiDemoBinding::HandleMidiEvent(const FMadweweMidiEvent& Event)
 {
-    if (Event.Channel != Channel)
-    {
-        return;
-    }
-    if (Light && Event.Data1 == PadNote)
+    if (Light && Event.Channel == Channel && Event.Data1 == PadNote)
     {
         if (Event.Kind == EMadweweMidiKind::NoteOn)
         {
@@ -80,7 +88,7 @@ void UMadweweMidiDemoBinding::HandleMidiEvent(const FMadweweMidiEvent& Event)
             Light->SetIntensity(InitialIntensity);
         }
     }
-    if (Mesh && Event.Kind == EMadweweMidiKind::ControlChange && Event.Data1 == HeightCC)
+    if (Mesh && Event.Channel == HeightChannel && Event.Kind == EMadweweMidiKind::ControlChange && Event.Data1 == HeightCC)
     {
         Mesh->SetRelativeLocation(InitialLocation + FVector(0.0f, 0.0f, HeightRange * MidiUnit(Event.Data2)));
     }

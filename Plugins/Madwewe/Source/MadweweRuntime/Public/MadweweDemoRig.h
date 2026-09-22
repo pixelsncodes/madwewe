@@ -20,8 +20,11 @@ public:
 
     /** Change the demo's pad target after observing a real MIDI Note On. */
     bool UsePad(int32 InChannel, int32 InNote);
+    bool UseHeightCC(int32 InChannel, int32 InCC);
     int32 GetPadNote() const;
     int32 GetPadChannel() const;
+    int32 GetHeightCC() const;
+    int32 GetHeightChannel() const;
 
 private:
     UPROPERTY(VisibleAnywhere, Category = "Madwewe|Demo")

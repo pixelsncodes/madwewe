@@ -43,6 +43,13 @@ bool FMadweweMidiNormalizationTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("MIDI maximum"), UMadweweMidiDemoBinding::MidiUnit(127), 1.0f);
     TestEqual(TEXT("Below range clamps"), UMadweweMidiDemoBinding::MidiUnit(-1), 0.0f);
     TestEqual(TEXT("Above range clamps"), UMadweweMidiDemoBinding::MidiUnit(128), 1.0f);
+    UMadweweMidiDemoBinding* Binding = NewObject<UMadweweMidiDemoBinding>();
+    TestFalse(TEXT("Reject invalid CC channel"), Binding->UseHeightCC(17, 7));
+    TestFalse(TEXT("Reject invalid CC number"), Binding->UseHeightCC(2, 128));
+    TestTrue(TEXT("Learn a valid CC"), Binding->UseHeightCC(2, 7));
+    TestEqual(TEXT("Learned CC channel"), Binding->HeightChannel, 2);
+    TestEqual(TEXT("Learned CC number"), Binding->HeightCC, 7);
+    TestEqual(TEXT("Learning CC preserves pad channel"), Binding->Channel, 1);
     const AMadweweDemoRig* RigDefaults = GetDefault<AMadweweDemoRig>();
     const UCameraComponent* Camera = RigDefaults->FindComponentByClass<UCameraComponent>();
     const UPointLightComponent* Light = RigDefaults->FindComponentByClass<UPointLightComponent>();
@@ -53,6 +60,7 @@ bool FMadweweMidiNormalizationTest::RunTest(const FString& Parameters)
     if (Camera && Light && Mesh)
     {
         TestTrue(TEXT("Camera faces the lit side"), Camera->GetRelativeLocation().X < 0.0f && Light->GetRelativeLocation().X < 0.0f);
+        TestTrue(TEXT("Camera leaves room for cube travel"), Camera->GetRelativeLocation().X <= -500.0f);
         TestNotNull(TEXT("Demo mesh asset loaded"), Mesh->GetStaticMesh().Get());
     }
     return true;
