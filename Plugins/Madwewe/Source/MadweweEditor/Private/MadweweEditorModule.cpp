@@ -49,6 +49,10 @@ public:
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
                         .OnClicked(this, &SMadweweMidiMonitor::SpawnRig) ]
                     + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
+                    [ SNew(SButton).Text(LOCTEXT("UseLastPad", "Use last pad"))
+                        .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
+                        .OnClicked(this, &SMadweweMidiMonitor::UseLastPad) ]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
                     [ SNew(SButton).Text(LOCTEXT("Refresh", "Refresh ports"))
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
                         .OnClicked(this, &SMadweweMidiMonitor::Refresh) ]
@@ -82,11 +86,11 @@ public:
                 [
                     SNew(SHorizontalBox)
                     + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
-                    [ SNew(SButton).Text(LOCTEXT("TestPadDown", "Pad 36 down"))
+                    [ SNew(SButton).Text(this, &SMadweweMidiMonitor::GetTestPadDownLabel)
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
                         .OnClicked(this, &SMadweweMidiMonitor::TestPadDown) ]
                     + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
-                    [ SNew(SButton).Text(LOCTEXT("TestPadUp", "Pad 36 up"))
+                    [ SNew(SButton).Text(this, &SMadweweMidiMonitor::GetTestPadUpLabel)
                         .IsEnabled(this, &SMadweweMidiMonitor::HasPlayWorld)
                         .OnClicked(this, &SMadweweMidiMonitor::TestPadUp) ]
                     + SHorizontalBox::Slot().AutoWidth()
@@ -95,7 +99,7 @@ public:
                         .OnClicked(this, &SMadweweMidiMonitor::TestKnob) ]
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
-                [ SNew(STextBlock).Text(LOCTEXT("Columns", "Time  |  Port  |  Channel  |  Event  |  Number  |  Value")) ]
+                [ SNew(STextBlock).Text(LOCTEXT("Columns", "Time  |  Port  |  Channel  |  Event  |  Raw  |  Number  |  Value")) ]
                 + SVerticalBox::Slot().FillHeight(1)
                 [ SNew(SScrollBox)
                     + SScrollBox::Slot()
@@ -137,7 +141,7 @@ private:
         if (UMadweweMidiSubsystem* Service = GetService(); Service && SelectedDevice.IsValid())
         {
             Message = Service->Connect(SelectedDevice->Id)
-                ? TEXT("Connected. Press a pad or turn a control.")
+                ? TEXT("Press a pad or turn a control.")
                 : TEXT("Could not open this port. It may be in use or disconnected; refresh and try again.");
         }
         return FReply::Handled();
@@ -166,7 +170,9 @@ private:
     {
         if (UMadweweMidiSubsystem* Service = GetService())
         {
-            Service->EmitTestEvent(EMadweweMidiKind::NoteOn, 1, 36, 100);
+            Service->EmitTestEvent(EMadweweMidiKind::NoteOn,
+                TestRig.IsValid() ? TestRig->GetPadChannel() : 1,
+                TestRig.IsValid() ? TestRig->GetPadNote() : 36, 100);
         }
         return FReply::Handled();
     }
@@ -175,7 +181,9 @@ private:
     {
         if (UMadweweMidiSubsystem* Service = GetService())
         {
-            Service->EmitTestEvent(EMadweweMidiKind::NoteOff, 1, 36, 0);
+            Service->EmitTestEvent(EMadweweMidiKind::NoteOff,
+                TestRig.IsValid() ? TestRig->GetPadChannel() : 1,
+                TestRig.IsValid() ? TestRig->GetPadNote() : 36, 0);
         }
         return FReply::Handled();
     }
@@ -189,7 +197,11 @@ private:
         }
         if (TestRig.IsValid())
         {
-            Message = TEXT("Test rig is already in this Play session.");
+            if (APlayerController* Player = World->GetFirstPlayerController())
+            {
+                Player->SetViewTarget(TestRig.Get());
+            }
+            Message = TEXT("Framed the existing test rig.");
             return FReply::Handled();
         }
         FVector Location(350.0f, 0.0f, 100.0f);
@@ -201,8 +213,40 @@ private:
             Location = ViewLocation + ViewRotation.Vector() * 350.0f;
         }
         TestRig = World->SpawnActor<AMadweweDemoRig>(Location, FRotator::ZeroRotator);
-        Message = TestRig.IsValid() ? TEXT("Test rig spawned in front of the camera.")
+        if (TestRig.IsValid())
+        {
+            if (APlayerController* Player = World->GetFirstPlayerController())
+            {
+                Player->SetViewTarget(TestRig.Get());
+            }
+        }
+        Message = TestRig.IsValid() ? TEXT("Test rig framed. Press a pad, then use last pad to assign it.")
             : TEXT("Could not spawn test rig in this Play world.");
+        return FReply::Handled();
+    }
+
+    FReply UseLastPad()
+    {
+        UMadweweMidiSubsystem* Service = GetService();
+        if (!Service || !TestRig.IsValid())
+        {
+            Message = TEXT("Spawn the test rig first.");
+            return FReply::Handled();
+        }
+        const TArray<FMadweweMidiEvent> Events = Service->GetRecentEvents();
+        for (int32 Index = Events.Num() - 1; Index >= 0; --Index)
+        {
+            const FMadweweMidiEvent& Event = Events[Index];
+            if (!Event.bSynthetic && Event.Kind == EMadweweMidiKind::NoteOn)
+            {
+                if (TestRig->UsePad(Event.Channel, Event.Data1))
+                {
+                    Message = FString::Printf(TEXT("Rig listens to note %d on channel %d."), Event.Data1, Event.Channel);
+                }
+                return FReply::Handled();
+            }
+        }
+        Message = TEXT("No real pad press found yet. Press one, then try again.");
         return FReply::Handled();
     }
 
@@ -234,6 +278,16 @@ private:
     }
 
     FText GetSelectedDeviceText() const { return FText::FromString(DescribeDevice(SelectedDevice)); }
+    FText GetTestPadDownLabel() const
+    {
+        return FText::Format(LOCTEXT("PadDownFormat", "Pad {0} down"),
+            FText::AsNumber(TestRig.IsValid() ? TestRig->GetPadNote() : 36));
+    }
+    FText GetTestPadUpLabel() const
+    {
+        return FText::Format(LOCTEXT("PadUpFormat", "Pad {0} up"),
+            FText::AsNumber(TestRig.IsValid() ? TestRig->GetPadNote() : 36));
+    }
 
     FText GetStatus() const
     {
@@ -241,7 +295,12 @@ private:
         {
             if (Service->IsConnected())
             {
-                return FText::FromString(FString::Printf(TEXT("Connected: %s"), *Service->GetConnectedDeviceName()));
+                FString Connection = FString::Printf(TEXT("Connected: %s"), *Service->GetConnectedDeviceName());
+                if (SelectedDevice.IsValid() && SelectedDevice->Id != Service->GetConnectedDeviceId())
+                {
+                    Connection += TEXT(" | Dropdown shows another port; click Connect to switch.");
+                }
+                return FText::FromString(Message.IsEmpty() ? Connection : Connection + TEXT(" | ") + Message);
             }
             return FText::FromString(Message.IsEmpty() ? TEXT("Refresh ports to begin.") : Message);
         }
@@ -262,9 +321,10 @@ private:
             const FMadweweMidiEvent& Event = Events[Index];
             const TCHAR* Kind = Event.Kind == EMadweweMidiKind::NoteOn ? TEXT("Note On")
                 : Event.Kind == EMadweweMidiKind::NoteOff ? TEXT("Note Off")
-                : Event.Kind == EMadweweMidiKind::ControlChange ? TEXT("CC") : TEXT("Other");
-            Lines += FString::Printf(TEXT("%d  |  %s  |  %d  |  %s  |  %d  |  %d\n"),
-                Event.Timestamp, *Event.DeviceName, Event.Channel, Kind, Event.Data1, Event.Data2);
+                : Event.Kind == EMadweweMidiKind::ControlChange ? TEXT("CC")
+                : Event.RawType == 10 ? TEXT("Pad pressure") : TEXT("Other");
+            Lines += FString::Printf(TEXT("%d  |  %s  |  %d  |  %s  |  %d  |  %d  |  %d\n"),
+                Event.Timestamp, *Event.DeviceName, Event.Channel, Kind, Event.RawType, Event.Data1, Event.Data2);
         }
         return FText::FromString(Lines.IsEmpty() ? TEXT("No events yet.") : Lines);
     }

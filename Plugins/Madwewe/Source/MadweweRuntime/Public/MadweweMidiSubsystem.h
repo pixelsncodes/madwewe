@@ -91,6 +91,9 @@ public:
     UFUNCTION(BlueprintPure, Category = "Madwewe|MIDI")
     FString GetConnectedDeviceName() const { return ConnectedDeviceName; }
 
+    UFUNCTION(BlueprintPure, Category = "Madwewe|MIDI")
+    int32 GetConnectedDeviceId() const { return ConnectedDeviceId; }
+
     /** 0 accepts all channels; otherwise accept only 1-16. */
     UFUNCTION(BlueprintCallable, Category = "Madwewe|MIDI")
     void SetChannelFilter(int32 Channel);
@@ -124,6 +127,7 @@ private:
     TObjectPtr<UMIDIDeviceInputController> Controller;
 
     FString ConnectedDeviceName;
+    int32 ConnectedDeviceId = INDEX_NONE;
     TArray<FMadweweMidiDevice> AvailableDevices;
     int32 ChannelFilter = 0;
     TArray<FMadweweMidiEvent> RecentEvents;

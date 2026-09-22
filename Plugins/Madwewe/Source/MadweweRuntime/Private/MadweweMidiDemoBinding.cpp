@@ -51,6 +51,18 @@ float UMadweweMidiDemoBinding::MidiUnit(int32 Value)
     return FMath::Clamp(Value, 0, 127) / 127.0f;
 }
 
+bool UMadweweMidiDemoBinding::UsePad(int32 InChannel, int32 InNote)
+{
+    if (InChannel < 1 || InChannel > 16 || InNote < 0 || InNote > 127)
+    {
+        return false;
+    }
+    RestoreTargets();
+    Channel = InChannel;
+    PadNote = InNote;
+    return true;
+}
+
 void UMadweweMidiDemoBinding::HandleMidiEvent(const FMadweweMidiEvent& Event)
 {
     if (Event.Channel != Channel)

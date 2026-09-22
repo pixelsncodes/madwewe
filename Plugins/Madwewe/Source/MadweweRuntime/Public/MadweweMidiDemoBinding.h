@@ -27,7 +27,7 @@ public:
     int32 HeightCC = 21;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Madwewe|Demo|Response", meta = (ClampMin = "0"))
-    float LightBoost = 500.0f;
+    float LightBoost = 2000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Madwewe|Demo|Response")
     float HeightRange = 200.0f;
@@ -36,6 +36,7 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
     static float MidiUnit(int32 Value);
+    bool UsePad(int32 InChannel, int32 InNote);
 
 private:
     UFUNCTION()

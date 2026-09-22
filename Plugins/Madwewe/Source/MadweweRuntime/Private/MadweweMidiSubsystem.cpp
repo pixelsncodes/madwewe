@@ -44,6 +44,7 @@ bool UMadweweMidiSubsystem::Connect(int32 DeviceId)
     }
     Controller = NewController;
     ConnectedDeviceName = Device->Name;
+    ConnectedDeviceId = DeviceId;
     Controller->OnMIDIRawEvent.AddUObject(this, &UMadweweMidiSubsystem::HandleRawEvent);
     OnConnectionChanged.Broadcast(true);
     return true;
@@ -59,6 +60,7 @@ void UMadweweMidiSubsystem::Disconnect()
         Controller = nullptr;
     }
     ConnectedDeviceName.Reset();
+    ConnectedDeviceId = INDEX_NONE;
     if (bWasConnected)
     {
         OnConnectionChanged.Broadcast(false);

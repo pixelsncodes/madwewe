@@ -2,6 +2,10 @@
 
 #include "MadweweMidiSubsystem.h"
 #include "MadweweMidiDemoBinding.h"
+#include "MadweweDemoRig.h"
+#include "Camera/CameraComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Misc/AutomationTest.h"
 
@@ -18,6 +22,9 @@ bool FMadweweMidiNormalizationTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Other event"), UMadweweMidiSubsystem::NormalizeType(14, 1), EMadweweMidiKind::Other);
     UGameInstance* Game = NewObject<UGameInstance>();
     UMadweweMidiSubsystem* Service = NewObject<UMadweweMidiSubsystem>(Game);
+    TestEqual(TEXT("No port connected initially"), Service->GetConnectedDeviceId(), INDEX_NONE);
+    TestFalse(TEXT("Cannot connect an unlisted port"), Service->Connect(999));
+    TestEqual(TEXT("Failed connection leaves no active port"), Service->GetConnectedDeviceId(), INDEX_NONE);
     TestFalse(TEXT("Reject invalid channel"), Service->EmitTestEvent(EMadweweMidiKind::NoteOn, 17, 36, 100));
     TestFalse(TEXT("Reject invalid value"), Service->EmitTestEvent(EMadweweMidiKind::ControlChange, 1, 21, 128));
     Service->SetChannelFilter(2);
@@ -36,6 +43,18 @@ bool FMadweweMidiNormalizationTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("MIDI maximum"), UMadweweMidiDemoBinding::MidiUnit(127), 1.0f);
     TestEqual(TEXT("Below range clamps"), UMadweweMidiDemoBinding::MidiUnit(-1), 0.0f);
     TestEqual(TEXT("Above range clamps"), UMadweweMidiDemoBinding::MidiUnit(128), 1.0f);
+    const AMadweweDemoRig* RigDefaults = GetDefault<AMadweweDemoRig>();
+    const UCameraComponent* Camera = RigDefaults->FindComponentByClass<UCameraComponent>();
+    const UPointLightComponent* Light = RigDefaults->FindComponentByClass<UPointLightComponent>();
+    const UStaticMeshComponent* Mesh = RigDefaults->FindComponentByClass<UStaticMeshComponent>();
+    TestNotNull(TEXT("Demo rig has a camera"), Camera);
+    TestNotNull(TEXT("Demo rig has a light"), Light);
+    TestNotNull(TEXT("Demo rig has a mesh"), Mesh);
+    if (Camera && Light && Mesh)
+    {
+        TestTrue(TEXT("Camera faces the lit side"), Camera->GetRelativeLocation().X < 0.0f && Light->GetRelativeLocation().X < 0.0f);
+        TestNotNull(TEXT("Demo mesh asset loaded"), Mesh->GetStaticMesh().Get());
+    }
     return true;
 }
 

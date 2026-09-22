@@ -5,6 +5,7 @@
 #include "MadweweDemoRig.generated.h"
 
 class UPointLightComponent;
+class UCameraComponent;
 class UStaticMeshComponent;
 class UMadweweMidiDemoBinding;
 
@@ -17,6 +18,11 @@ class MADWEWERUNTIME_API AMadweweDemoRig : public AActor
 public:
     AMadweweDemoRig();
 
+    /** Change the demo's pad target after observing a real MIDI Note On. */
+    bool UsePad(int32 InChannel, int32 InNote);
+    int32 GetPadNote() const;
+    int32 GetPadChannel() const;
+
 private:
     UPROPERTY(VisibleAnywhere, Category = "Madwewe|Demo")
     TObjectPtr<USceneComponent> SceneRoot;
@@ -26,6 +32,9 @@ private:
 
     UPROPERTY(VisibleAnywhere, Category = "Madwewe|Demo")
     TObjectPtr<UPointLightComponent> Light;
+
+    UPROPERTY(VisibleAnywhere, Category = "Madwewe|Demo")
+    TObjectPtr<UCameraComponent> PreviewCamera;
 
     UPROPERTY(VisibleAnywhere, Category = "Madwewe|Demo")
     TObjectPtr<UMadweweMidiDemoBinding> MidiBinding;
