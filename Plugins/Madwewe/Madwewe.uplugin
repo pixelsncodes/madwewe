@@ -1,0 +1,17 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.0.1-dev",
+  "FriendlyName": "Madwewe",
+  "Description": "Map audio and MIDI signals to Unreal Engine experiences.",
+  "Category": "Audio",
+  "CreatedBy": "Madwewe contributors",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "SupportedTargetPlatforms": [ "Win64" ],
+  "Modules": [
+    { "Name": "MadweweRuntime", "Type": "Runtime", "LoadingPhase": "Default" },
+    { "Name": "MadweweEditor", "Type": "Editor", "LoadingPhase": "Default" }
+  ]
+}
