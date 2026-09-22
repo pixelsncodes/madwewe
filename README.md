@@ -4,9 +4,15 @@
 
 Madwewe is an open-source Unreal Engine plugin project for mapping audio and MIDI to lights, materials, motion, particles, and gameplay events.
 
-**Status: foundation. The empty runtime/editor plugin compiles and packages on Windows; audio, MIDI, mapping UI, and a playable demo have not been implemented yet.**
+**Status: early implementation. A Blueprint-accessible MIDI input service now compiles and its event-normalization test passes. Audio, mappings, editor UI, hardware validation, and a playable demo are still pending.**
 
 Initial development target: Windows, Unreal Engine 5.8.2, with a Maschine MK3 as the first hardware test controller. Other controllers should work through standard MIDI mappings; they will be listed as tested only after verification.
+
+## MIDI input (first implementation)
+
+In a Blueprint, use **Get Game Instance Subsystem → Madwewe Midi Subsystem**. Call **Refresh Devices**, choose an input port by its displayed name/ID, then call **Connect** with that ID. Bind **On Midi Event** to receive channel, raw type, normalized Note On/Off/Control Change kind, data bytes, and timestamp. **Get Recent Events** returns the most recent 128 events in arrival order. **Set Channel Filter** accepts 0 for all channels or 1–16 for one channel. Call **Disconnect** before ending a session; it also runs on game-instance teardown.
+
+Refresh intentionally disconnects this subsystem's current port because Unreal reinitializes MIDI controllers during device enumeration. Connect uses the last refreshed list; refresh again after hardware changes. There is no automatic reconnect or visible monitor panel yet. Physical MK3 behavior is unverified.
 
 ## Project documents
 

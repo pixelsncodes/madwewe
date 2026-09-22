@@ -10,6 +10,7 @@
   "IsBetaVersion": true,
   "Installed": false,
   "SupportedTargetPlatforms": [ "Win64" ],
+  "Plugins": [ { "Name": "MIDIDevice", "Enabled": true } ],
   "Modules": [
     { "Name": "MadweweRuntime", "Type": "Runtime", "LoadingPhase": "Default" },
     { "Name": "MadweweEditor", "Type": "Editor", "LoadingPhase": "Default" }
