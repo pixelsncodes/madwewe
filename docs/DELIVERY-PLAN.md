@@ -2,7 +2,7 @@
 
 ## GitHub and build in public
 
-Repository target: `pixelsncodes/madwewe`, public. The local repository was initialized and the name returned 404 before publication. Start with a single repository holding original plugin source, demo project, tests, docs and build scripts. Check the remote publication state separately.
+Public repository: [pixelsncodes/madwewe](https://github.com/pixelsncodes/madwewe), with `main` as its default branch. The initial commit contains the plugin skeleton, demo host, plans and contribution guidance. Keep original plugin source, demo project, tests, docs and build scripts in this one repository.
 
 Proposed layout after scaffolding:
 
